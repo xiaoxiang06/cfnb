@@ -445,7 +445,7 @@ git branch -M $(git remote show origin | grep "HEAD branch" | cut -d " " -f5) 2>
 
    ```powershell
    # Windows (git_sync.ps1)
-   $github_token = "ghp_xxxxxxxxxxxxxxxxxxxx"
+   $github_token = "your_github_personal_access_token_here"
    $github_username = "your_github_username"
    $repo_name = "your_repo_name"
    $branch = "main"
@@ -453,7 +453,7 @@ git branch -M $(git remote show origin | grep "HEAD branch" | cut -d " " -f5) 2>
 
    ```bash
    # Linux (git_sync.sh)
-   github_token="ghp_xxxxxxxxxxxxxxxxxxxx"
+   github_token="your_github_personal_access_token_here"
    github_username="your_github_username"
    repo_name="your_repo_name"
    branch="main"
@@ -467,6 +467,20 @@ git branch -M $(git remote show origin | grep "HEAD branch" | cut -d " " -f5) 2>
    - **Linux**：执行 `./git_sync.sh`
 3. 若终端显示 `✅ ip.txt 已推送到 GitHub`，则配置成功。
 4. 之后每次运行 `main.py`，程序都会自动调用推送脚本，无需人工干预。
+
+<details>
+<summary>🚨 点击展开：推送报错常见原因</summary>
+
+| 报错信息 | 原因 | 解决方法 |
+|----------|------|----------|
+| `remote origin already exists` | 远程仓库已关联过 | 执行 `git remote set-url origin https://github.com/你的用户名/仓库名.git` 直接修改地址 |
+| `failed to push some refs` | 远程有本地没有的文件（如 README） | 首次推送使用 `git push -f origin main` 强制覆盖（⚠️ 会删除远程多余文件） |
+| `Permission denied` 或 `403` | Token 无效或权限不足 | 检查 Token 是否勾选 `repo` 权限，且未过期；重新生成 Token 并替换 |
+| `src refspec main does not match any` | 本地分支名不是 `main` | 执行 `git branch` 查看实际分支名，修改推送脚本中的 `$branch` 变量与之相同 |
+</details>
+```
+
+---
 
 ### 验证与订阅
 
