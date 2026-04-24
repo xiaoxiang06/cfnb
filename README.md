@@ -236,7 +236,6 @@ python3 main.py
 | :--- | :--- | :--- | :--- |
 | `TCP_PROBES` | `int` | `3` | 每个节点 TCP 测试次数 |
 | `MIN_SUCCESS_RATE` | `float` | `1.0` | 最低成功率阈值（0.0~1.0） |
-| `TCP_PREFILTER_TIMEOUT` | `float` | `1.0` | TCP 快速预检超时（秒），不可达节点直接淘汰 |
 | `TIMEOUT` | `float` | `2.0` | 单次 TCP 连接超时（秒） |
 | `SOCKET_DEFAULT_TIMEOUT` | `int` | `3` | 全局 Socket 默认超时（秒），防止永久阻塞 |
 | `PROGRESS_PRINT_INTERVAL` | `float` | `1` | 进度打印刷新间隔（秒），避免频繁 I/O |
@@ -327,8 +326,6 @@ python3 main.py
 | `BANDWIDTH_URL_TEMPLATE` | `string` | `"https://speed.cloudflare.com/__down?bytes={bytes}"` | 测速 URL 模板 |
 | `BANDWIDTH_PROCESS_BUFFER` | `int` | `2` | curl 进程额外缓冲时间（秒） |
 | `BANDWIDTH_CONNECT_TIMEOUT` | `int` | `3` | curl 测速连接超时（秒） |
-| `CURL_SPEED_LIMIT` | `int` | `10240` | curl 测速速度下限（字节/秒），低于此值自动中止 |
-| `CURL_SPEED_TIME` | `int` | `2` | curl 测速速度下限持续时间（秒） |
 
 **并发控制参数**
 

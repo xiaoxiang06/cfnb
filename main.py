@@ -48,7 +48,6 @@ def load_config():
         "BANDWIDTH_CANDIDATES": 90,
         "TCP_PROBES": 3,
         "MIN_SUCCESS_RATE": 1.0,
-        "TCP_PREFILTER_TIMEOUT": 1.0,
         "TIMEOUT": 2.0,
         "SOCKET_DEFAULT_TIMEOUT": 3,
         "PROGRESS_PRINT_INTERVAL": 1,
@@ -95,8 +94,6 @@ def load_config():
         "BANDWIDTH_URL_TEMPLATE": "https://speed.cloudflare.com/__down?bytes={bytes}",
         "BANDWIDTH_PROCESS_BUFFER": 2,
         "BANDWIDTH_CONNECT_TIMEOUT": 3,
-        "CURL_SPEED_LIMIT": 10240,
-        "CURL_SPEED_TIME": 2,
         "MAX_WORKERS": 150,
         "AVAILABILITY_WORKERS": 5,
         "BANDWIDTH_WORKERS": 5,
@@ -122,7 +119,6 @@ PER_COUNTRY_TOP_N = cfg["PER_COUNTRY_TOP_N"]
 BANDWIDTH_CANDIDATES = cfg["BANDWIDTH_CANDIDATES"]
 TCP_PROBES = cfg["TCP_PROBES"]
 MIN_SUCCESS_RATE = cfg["MIN_SUCCESS_RATE"]
-TCP_PREFILTER_TIMEOUT = cfg["TCP_PREFILTER_TIMEOUT"]
 TIMEOUT = cfg["TIMEOUT"]
 SOCKET_DEFAULT_TIMEOUT = cfg["SOCKET_DEFAULT_TIMEOUT"]
 PROGRESS_PRINT_INTERVAL = cfg["PROGRESS_PRINT_INTERVAL"]
@@ -165,8 +161,6 @@ BANDWIDTH_RETRY_DELAY = cfg["BANDWIDTH_RETRY_DELAY"]
 BANDWIDTH_URL_TEMPLATE = cfg["BANDWIDTH_URL_TEMPLATE"]
 BANDWIDTH_PROCESS_BUFFER = cfg["BANDWIDTH_PROCESS_BUFFER"]
 BANDWIDTH_CONNECT_TIMEOUT = cfg["BANDWIDTH_CONNECT_TIMEOUT"]
-CURL_SPEED_LIMIT = cfg["CURL_SPEED_LIMIT"]
-CURL_SPEED_TIME = cfg["CURL_SPEED_TIME"]
 MAX_WORKERS = cfg["MAX_WORKERS"]
 AVAILABILITY_WORKERS = cfg["AVAILABILITY_WORKERS"]
 BANDWIDTH_WORKERS = cfg["BANDWIDTH_WORKERS"]
@@ -238,19 +232,9 @@ def fetch_nodes():
                 sys.exit(1)
 
 def test_tcp_latency(ip, port, timeout=TIMEOUT, probes=TCP_PROBES):
-    # 快速预检
-    try:
-        start = time.time()
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(TCP_PREFILTER_TIMEOUT)
-            sock.connect((ip, int(port)))
-        min_latency = time.time() - start
-        success = 1
-    except Exception:
-        return float("inf"), 0
-
-    # 剩余正式测试
-    for _ in range(probes - 1):
+    min_latency = float("inf")
+    success = 0
+    for _ in range(probes):
         try:
             start = time.time()
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -262,7 +246,6 @@ def test_tcp_latency(ip, port, timeout=TIMEOUT, probes=TCP_PROBES):
             success += 1
         except Exception:
             continue
-
     return min_latency, success
 
 def test_node(node_str):
@@ -368,8 +351,6 @@ def measure_bandwidth_curl(node_str):
     curl_cmd = [
         "curl", "-s", "-o", null_device,
         "-w", "%{size_download} %{time_total}",
-        "--speed-limit", str(CURL_SPEED_LIMIT),
-        "--speed-time", str(CURL_SPEED_TIME),
         "--resolve", f"speed.cloudflare.com:{port}:{ip}",
         "--connect-timeout", str(BANDWIDTH_CONNECT_TIMEOUT),
         "--max-time", str(BANDWIDTH_TIMEOUT),
