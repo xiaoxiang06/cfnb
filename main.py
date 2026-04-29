@@ -861,26 +861,47 @@ def main():
     if FILTER_COUNTRIES_ENABLED:
         print(f"国家过滤：启用，允许国家：{', '.join(ALLOWED_COUNTRIES)}")
 
-    # 统一从 ADDITIONAL_SOURCES 加载所有数据源
+        # ==================== 数据源交互选择 ====================
+    print("\n=== 请选择优选 IP 数据源 ===")
+    print("1. 使用 config.json 中的 URL IP 库 (默认)")
+    print("2. 使用本地 ipv4.txt")
+    print("3. 使用本地 ipv4.csv")
+    choice = input("请输入选项 (1/2/3) [直接回车默认 1]: ").strip()
+
     nodes = []
-    additional_sources = cfg.get("ADDITIONAL_SOURCES", [])
-    for source in additional_sources:
-        if not source.get("enabled", True):
-            continue
-        url = source.get("url")
-        if not url:
-            continue
-        v2_nodes = fetch_additional_source(url)
-        if v2_nodes:
-            seen = set()
-            for n in nodes:
-                seen.add(n.split('#')[0])
-            for n in v2_nodes:
-                key = n.split('#')[0]
-                if key not in seen:
-                    seen.add(key)
-                    nodes.append(n)
-    print(f"合并后总计 {len(nodes)} 个节点。")
+    
+    if choice == '2':
+        print("\n正在加载本地 ipv4.txt...")
+        raw_ips = read_local_txt("ipv4.txt")
+        text_block = normalize_local_ips(raw_ips)
+        nodes = parse_adaptive(text_block) # 复用原有的自适应解析和 API 归属地查询
+    elif choice == '3':
+        print("\n正在加载本地 ipv4.csv...")
+        raw_ips = read_local_csv("ipv4.csv")
+        text_block = normalize_local_ips(raw_ips)
+        nodes = parse_adaptive(text_block)
+    else:
+        print("\n正在加载 config.json 中的 URL IP 库...")
+        additional_sources = cfg.get("ADDITIONAL_SOURCES", [])
+        for source in additional_sources:
+            if not source.get("enabled", True):
+                continue
+            url = source.get("url")
+            if not url:
+                continue
+            v2_nodes = fetch_additional_source(url)
+            if v2_nodes:
+                seen = set()
+                for n in nodes:
+                    seen.add(n.split('#')[0])
+                for n in v2_nodes:
+                    key = n.split('#')[0]
+                    if key not in seen:
+                        seen.add(key)
+                        nodes.append(n)
+
+    print(f"\n成功获取，合并后总计 {len(nodes)} 个节点。")
+
 
     if not nodes:
         print("没有获取到任何有效节点，退出。")
