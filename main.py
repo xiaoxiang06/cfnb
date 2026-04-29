@@ -17,6 +17,7 @@ import os
 import subprocess
 import shutil
 import json
+import csv
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -849,6 +850,56 @@ def sync_to_github():
         summary="GitHub 推送失败"
     )
     print(f"⚠️ 已尝试 {max_retries} 次推送，均失败，请检查网络或 GitHub 仓库状态。")
+
+
+# ==================== 本地文件读取与解析 ====================
+def read_local_txt(filepath="ipv4.txt"):
+    """从本地 txt 文件读取 IP"""
+    if not os.path.exists(filepath):
+        print(f"❌ 找不到文件 {filepath}")
+        return []
+    with open(filepath, 'r', encoding='utf-8') as f:
+        return [line.strip() for line in f if line.strip()]
+
+def read_local_csv(filepath="ipv4.csv", ip_column=0):
+    """从本地 csv 文件读取 IP，默认提取第一列"""
+    if not os.path.exists(filepath):
+        print(f"❌ 找不到文件 {filepath}")
+        return []
+    lines = []
+    with open(filepath, 'r', encoding='utf-8') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if row and len(row) > ip_column:
+                ip = row[ip_column].strip()
+                if ip:
+                    lines.append(ip)
+    return lines
+
+def normalize_local_ips(ip_list):
+    """
+    标准化 IP 格式以适配原脚本的 parse_adaptive 解析器。
+    原脚本期望格式: IP:端口#国家代码，如果缺失 # 会被忽略。
+    这里为纯 IP 自动补全 :443 和 #，以便触发脚本自带的 API 备用查询逻辑去获取国家代码。
+    """
+    normalized = []
+    for item in ip_list:
+        item = item.strip()
+        if not item: continue
+        
+        # 既没有端口也没有标签 -> 1.1.1.1:443#
+        if ':' not in item and '#' not in item:
+            item = f"{item}:443#"
+        # 有端口没有标签 -> 1.1.1.1:8443#
+        elif '#' not in item:
+            item = f"{item}#"
+        # 有标签没有端口 -> 1.1.1.1:443#US
+        elif ':' not in item:
+            ip, label = item.split('#', 1)
+            item = f"{ip}:443#{label}"
+            
+        normalized.append(item)
+    return "\n".join(normalized)
 
 def main():
     mode_str = f"全局最优{GLOBAL_TOP_N}个" if USE_GLOBAL_MODE else f"每个国家最优{PER_COUNTRY_TOP_N}个"
