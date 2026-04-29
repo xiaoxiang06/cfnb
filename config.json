@@ -1,16 +1,16 @@
 {
     "_comment": "Cloudflare IP 优选工具配置文件 - 请根据需求修改下方参数",
 
-    "USE_GLOBAL_MODE": true,
+    "USE_GLOBAL_MODE": false,
     "_comment_USE_GLOBAL_MODE": "true=全局最优15个；false=每个国家最优1个",
 
-    "GLOBAL_TOP_N": 15,
+    "GLOBAL_TOP_N": 20,
     "_comment_GLOBAL_TOP_N": "全局模式下最终保留的节点数量",
 
-    "PER_COUNTRY_TOP_N": 1,
+    "PER_COUNTRY_TOP_N": 20,
     "_comment_PER_COUNTRY_TOP_N": "分国家模式下每个国家保留的节点数量",
 
-    "BANDWIDTH_CANDIDATES": 90,
+    "BANDWIDTH_CANDIDATES": 100,
     "_comment_BANDWIDTH_CANDIDATES": "进入带宽测速的候选节点数（从TCP通过者中选取前N个）",
 
     "TCP_PROBES": 3,
@@ -28,13 +28,13 @@
     "PROGRESS_PRINT_INTERVAL": 1,
     "_comment_PROGRESS_PRINT_INTERVAL": "进度打印刷新间隔（秒），避免频繁 I/O",
 
-    "FILTER_COUNTRIES_ENABLED": false,
+    "FILTER_COUNTRIES_ENABLED": true,
     "_comment_FILTER_COUNTRIES_ENABLED": "是否启用国家过滤（仅保留指定国家的节点）",
 
     "ALLOWED_COUNTRIES": ["US"],
     "_comment_ALLOWED_COUNTRIES": "允许的国家代码列表（如 US, JP），仅在 FILTER_COUNTRIES_ENABLED=true 时生效",
 
-    "ENABLE_WXPUSHER": true,
+    "ENABLE_WXPUSHER": false,
     "_comment_ENABLE_WXPUSHER": "是否启用 WxPusher 微信通知",
 
     "WXPUSHER_APP_TOKEN": "your_app_token_here",
@@ -122,7 +122,7 @@
     "FILTER_IPV6_AVAILABILITY": true,
     "_comment_FILTER_IPV6_AVAILABILITY": "【仅DNS】是否过滤落地为 IPv6 的节点",
 
-    "FILTER_BLOCKED_COUNTRIES_ENABLED": true,
+    "FILTER_BLOCKED_COUNTRIES_ENABLED": false,
     "_comment_FILTER_BLOCKED_COUNTRIES_ENABLED": "【仅DNS】是否屏蔽特定国家的节点",
 
     "BLOCKED_COUNTRIES": [
@@ -132,10 +132,10 @@
     ],
     "_comment_BLOCKED_COUNTRIES": "【仅DNS】需要屏蔽的国家代码列表",
 
-    "DNS_UPDATE_TARGET_COUNT": 15,
+    "DNS_UPDATE_TARGET_COUNT": 20,
     "_comment_DNS_UPDATE_TARGET_COUNT": "DNS 更新时目标 IP 数量（仅当调用时未指定时使用）",
 
-    "BANDWIDTH_SIZE_MB": 0.5,
+    "BANDWIDTH_SIZE_MB": 1,
     "_comment_BANDWIDTH_SIZE_MB": "带宽测速下载文件大小（MB）",
 
     "BANDWIDTH_TIMEOUT": 3,
