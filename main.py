@@ -862,19 +862,38 @@ def read_local_txt(filepath="ipv4.txt"):
         return [line.strip() for line in f if line.strip()]
 
 def read_local_csv(filepath="ipv4.csv", ip_column=0):
-    """从本地 csv 文件读取 IP，默认提取第一列"""
+    """从本地 csv 文件读取 IP，支持多编码兼容"""
     if not os.path.exists(filepath):
         print(f"❌ 找不到文件 {filepath}")
         return []
+    
     lines = []
-    with open(filepath, 'r', encoding='utf-8') as f:
-        reader = csv.reader(f)
-        for row in reader:
-            if row and len(row) > ip_column:
-                ip = row[ip_column].strip()
-                if ip:
-                    lines.append(ip)
+    # 尝试多种编码读取，先尝试 utf-8，不行就尝试 gbk
+    encodings = ['utf-8', 'gbk', 'utf-16']
+    
+    content = None
+    for enc in encodings:
+        try:
+            with open(filepath, 'r', encoding=enc) as f:
+                # 预读一下看看是否报错
+                reader = csv.reader(f)
+                temp_lines = []
+                for row in reader:
+                    if row and len(row) > ip_column:
+                        ip = row[ip_column].strip()
+                        if ip:
+                            temp_lines.append(ip)
+                lines = temp_lines
+                print(f"✅ 成功以 {enc} 编码读取 ipv4.csv。")
+                break 
+        except (UnicodeDecodeError, Exception):
+            continue
+
+    if not lines and os.path.exists(filepath):
+         print(f"❌ 错误：无法识别文件 {filepath} 的编码格式。")
+         
     return lines
+
 
 def normalize_local_ips(ip_list):
     """
