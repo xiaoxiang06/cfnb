@@ -912,7 +912,7 @@ def main():
     if FILTER_COUNTRIES_ENABLED:
         print(f"国家过滤：启用，允许国家：{', '.join(ALLOWED_COUNTRIES)}")
 
-        # ==================== 数据源交互选择 ====================
+            # ==================== 数据源交互选择 ====================
     print("\n=== 请选择优选 IP 数据源 ===")
     print("1. 使用 config.json 中的 URL IP 库 (默认)")
     print("2. 使用本地 ipv4.txt")
@@ -924,13 +924,25 @@ def main():
     if choice == '2':
         print("\n正在加载本地 ipv4.txt...")
         raw_ips = read_local_txt("ipv4.txt")
+        if not raw_ips:
+            print("❌ 错误：未读取到数据或文件不存在，退出程序。")
+            sys.exit(1)
+            
+        print(f"共从 txt 读取了 {len(raw_ips)} 条纯 IP，正在进行格式化和归属地查询...")
         text_block = normalize_local_ips(raw_ips)
-        nodes = parse_adaptive(text_block) # 复用原有的自适应解析和 API 归属地查询
+        nodes = parse_adaptive(text_block)
+        
     elif choice == '3':
         print("\n正在加载本地 ipv4.csv...")
         raw_ips = read_local_csv("ipv4.csv")
+        if not raw_ips:
+            print("❌ 错误：未读取到数据或文件不存在，退出程序。")
+            sys.exit(1)
+            
+        print(f"共从 csv 读取了 {len(raw_ips)} 条纯 IP，正在进行格式化和归属地查询...")
         text_block = normalize_local_ips(raw_ips)
         nodes = parse_adaptive(text_block)
+        
     else:
         print("\n正在加载 config.json 中的 URL IP 库...")
         additional_sources = cfg.get("ADDITIONAL_SOURCES", [])
@@ -951,7 +963,8 @@ def main():
                         seen.add(key)
                         nodes.append(n)
 
-    print(f"\n成功获取，合并后总计 {len(nodes)} 个节点。")
+    print(f"\n处理完毕，当前可用总计 {len(nodes)} 个节点。")
+
 
 
     if not nodes:
