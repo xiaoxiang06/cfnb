@@ -70,10 +70,6 @@
             "enabled": true
         },
         {
-            "url": "https://raw.githubusercontent.com/xinyitang3/ip/refs/heads/main/all.txt",
-            "enabled": true
-        },
-        {
             "url": "https://raw.githubusercontent.com/rjdsq/git-cf-api/refs/heads/main/max.txt",
             "enabled": true
         },
