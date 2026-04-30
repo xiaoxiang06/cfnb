@@ -70,7 +70,7 @@
             "enabled": true
         },
         {
-            "url": "https://raw.githubusercontent.com/rjdsq/git-cf-api/main/max.txt",
+            "url": "https://raw.githubusercontent.com/rjdsq/git-cf-api/refs/heads/main/max.txt",
             "enabled": true
         },
         {
