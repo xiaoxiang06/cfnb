@@ -566,7 +566,7 @@ git branch -M $(git remote show origin | grep "HEAD branch" | cut -d " " -f5) 2>
 > [!WARNING]
 > **关于私有仓库的特别提醒**
 > 
-> 如果你将仓库设置为 **Private（私有）**，则通过 Raw 链接访问 `ip.txt` 时必须在 URL 后附加 `?token=你的令牌` 参数才能获取内容，例如：
+> 如果你将仓库设置为 **Private（私有）**，则通过 Raw 链接访问 `ip.txt` 时必须在 URL 后附加 `?token=xxxxxx` 参数才能获取内容，例如：
 > ```text
 > https://raw.githubusercontent.com/用户名/仓库名/refs/heads/分支名/ip.txt?token=xxxxxx
 > ```
