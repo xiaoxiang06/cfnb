@@ -711,8 +711,10 @@ def check_http_server(node_str, timeout, max_retries, retry_delay, method):
                 resp = requests.head(url, timeout=timeout, verify=False, allow_redirects=False, headers=headers)
             else:
                 resp = requests.get(url, timeout=timeout, verify=False, allow_redirects=False, headers=headers)
+            if resp.status_code != 400:
+                return (node_str, False, f"status_{resp.status_code}")
             server = resp.headers.get("server", "")
-            if server.lower() == "nginx":
+            if server.lower().startswith("nginx"):
                 return (node_str, False, server)
             else:
                 return (node_str, True, server)

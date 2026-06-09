@@ -130,7 +130,7 @@
     "_comment_AVAILABILITY_RETRY_DELAY": "可用性检测重试间隔（秒）",
 
     "HTTP_TEST_ENABLED": true,
-    "_comment_HTTP_TEST_ENABLED": "是否在可用性测试后开启 HTTP Server 检测（过滤 Server 为 nginx 的节点）",
+    "_comment_HTTP_TEST_ENABLED": "是否在可用性测试后开启 HTTP Server 检测（过滤 Server 非Cloudflare 的节点）",
 
     "HTTP_TEST_TIMEOUT": 3,
     "_comment_HTTP_TEST_TIMEOUT": "单次 HTTP 请求超时（秒）",
