@@ -1,7 +1,7 @@
 {
     "_comment": "Cloudflare IP 优选工具配置文件 - 请根据需求修改下方参数",
 
-    "USE_GLOBAL_MODE": true,
+    "USE_GLOBAL_MODE": false,
     "_comment_USE_GLOBAL_MODE": "true=全局最优15个；false=每个国家最优1个",
 
     "GLOBAL_TOP_N": 50,
