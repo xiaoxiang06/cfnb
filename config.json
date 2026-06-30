@@ -4,7 +4,7 @@
     "USE_GLOBAL_MODE": true,
     "_comment_USE_GLOBAL_MODE": "true=全局最优15个；false=每个国家最优1个",
 
-    "GLOBAL_TOP_N": 15,
+    "GLOBAL_TOP_N": 50,
     "_comment_GLOBAL_TOP_N": "全局模式下最终保留的节点数量",
 
     "PER_COUNTRY_TOP_N": 1,
@@ -49,7 +49,7 @@
     "PRE_FILTER_PORTS": [443],
     "_comment_PRE_FILTER_PORTS": "TCP 测试前允许的端口列表（可多端口）",
 
-    "ENABLE_WXPUSHER": true,
+    "ENABLE_WXPUSHER": false,
     "_comment_ENABLE_WXPUSHER": "是否启用 WxPusher 微信通知",
 
     "WXPUSHER_APP_TOKEN": "your_app_token_here",
@@ -195,7 +195,7 @@
     "FILTER_IPV6_AVAILABILITY": true,
     "_comment_FILTER_IPV6_AVAILABILITY": "【仅DNS】是否过滤落地为 IPv6 的节点",
 
-    "FILTER_BLOCKED_COUNTRIES_ENABLED": true,
+    "FILTER_BLOCKED_COUNTRIES_ENABLED": false,
     "_comment_FILTER_BLOCKED_COUNTRIES_ENABLED": "【仅DNS】黑名单开关（true=屏蔽下方 BLOCKED_COUNTRIES 中的国家）",
 
     "BLOCKED_COUNTRIES": [
@@ -211,7 +211,7 @@
     "DNS_IP_RISK_MAX_LEVEL": "高风险",
     "_comment_DNS_IP_RISK_MAX_LEVEL": "【仅DNS】允许的最高风险等级（极度纯净 / 纯净 / 轻微风险 / 高风险 / 极度危险）",
 
-    "DNS_UPDATE_TARGET_COUNT": 15,
+    "DNS_UPDATE_TARGET_COUNT": 30,
     "_comment_DNS_UPDATE_TARGET_COUNT": "DNS 更新时写入的最大 IP 数量，独立于筛选模式",
 
     "BANDWIDTH_SIZE_MB": 1.0,
