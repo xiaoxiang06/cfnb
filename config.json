@@ -7,7 +7,7 @@
     "GLOBAL_TOP_N": 50,
     "_comment_GLOBAL_TOP_N": "全局模式下最终保留的节点数量",
 
-    "PER_COUNTRY_TOP_N": 1,
+    "PER_COUNTRY_TOP_N": 10,
     "_comment_PER_COUNTRY_TOP_N": "分国家模式下每个国家保留的节点数量",
 
     "BANDWIDTH_CANDIDATES": 150,
@@ -34,7 +34,7 @@
     "FILTER_COUNTRIES_ENABLED": true,
     "_comment_FILTER_COUNTRIES_ENABLED": "前置白名单开关（true=仅保留下方 ALLOWED_COUNTRIES 中的国家，其余在 TCP 测试前剔除）",
 
-    "ALLOWED_COUNTRIES": ["US"],
+    "ALLOWED_COUNTRIES": ["HK"],
     "_comment_ALLOWED_COUNTRIES": "前置白名单列表（仅在 FILTER_COUNTRIES_ENABLED=true 时生效）",
 
     "PRE_FILTER_BLOCKED_ENABLED": true,
