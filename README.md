@@ -306,7 +306,7 @@ python3 main.py
 
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `FORCE_DIRECT` | `boolean` | `true` | 是否强制所有网络请求直连（`true`=清除系统代理，全部走直连） |
+| `FORCE_DIRECT` | `boolean` | `false` | 是否强制所有网络请求直连（`true`=清除系统代理，全部走直连） |
 
 ### DNS 黑名单参数（仅作用于 DNS 更新环节）
 
@@ -758,7 +758,7 @@ git branch -M $(git remote show origin | grep "HEAD branch" | cut -d " " -f5) 2>
 | 测试阶段 | 是否走代理 | 说明 |
 | :--- | :--- | :--- |
 | TCP 延迟测试 (Socket) | ❌ 直连 | 反映本机到节点的 RTT |
-| HTTP 检测 (requests) | ✅ 跟随系统代理 | 过滤非Cloudflare节点 |
+| HTTP 检测 (requests) | ❌ 直连 | 过滤非Cloudflare节点 |
 | 带宽测速 (curl) | ❌ 直连 | 反映本机到 CDN 的速度 |
 | API 请求类 (requests) | ✅ 跟随系统代理 | 获取节点、可用性、微信通知等 |
 | Git 推送 (git) | ✅ 跟随系统代理 | 涉及 `github.com` 等 |

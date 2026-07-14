@@ -219,7 +219,7 @@ def load_config():
         "OUTPUT_FILE": "ip.txt",
         "ENABLE_LOGGING": False,
         "LOG_FILE": "cfnb.log",
-        "FORCE_DIRECT": True,
+        "FORCE_DIRECT": False,
         "TEST_AVAILABILITY": True,
         "AVAILABILITY_CHECK_API": "https://api.090227.xyz/check",
         "AVAILABILITY_TIMEOUT": 3,
@@ -1061,10 +1061,9 @@ def check_http_server(node_str, timeout, max_retries, retry_delay, method, conne
                 "timeout": (connect_timeout, timeout),
                 "verify": False,
                 "allow_redirects": False,
-                "headers": headers
+                "headers": headers,
+                "proxies": {"http": None, "https": None}
             }
-            if FORCE_DIRECT:
-                request_kwargs["proxies"] = {"http": None, "https": None}
 
             if method.upper() == "HEAD":
                 resp = requests.head(url, **request_kwargs)
@@ -1213,6 +1212,7 @@ def measure_bandwidth_curl(node_str):
         "-L",
         "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
         "--http2",
+        "--noproxy", "*",
         "--resolve", f"speed.cloudflare.com:{port}:{ip}",
         "--connect-timeout", str(BANDWIDTH_CONNECT_TIMEOUT),
         "--max-time", str(BANDWIDTH_TIMEOUT),

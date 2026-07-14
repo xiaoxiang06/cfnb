@@ -126,7 +126,7 @@
     "LOG_FILE": "cfnb.log",
     "_comment_LOG_FILE": "运行日志文件名（仅在 ENABLE_LOGGING 为 true 时生效）",
 
-    "FORCE_DIRECT": true,
+    "FORCE_DIRECT": false,
     "_comment_FORCE_DIRECT": "是否强制所有网络请求直连（true=清除系统代理，全部直连）",
 
     "TEST_AVAILABILITY": true,
