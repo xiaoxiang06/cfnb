@@ -376,6 +376,7 @@ python3 main.py
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
 | `IP_CALIBRATION_ENABLED` | `boolean` | `false` | 是否启用 IP 地区校准（基于 ipinfo.io） |
+| `TOKEN_FAILURE_THRESHOLD` | `float` | `1` | Token连续失败多少次后跳过（达到该次数则切换下一个Token） |
 | `IP_CALIBRATION_MIN_INTERVAL` | `float` | `0.1` | 请求最小间隔（秒） |
 | `IP_CALIBRATION_TOKEN_FILE` | `string` | `"valid_tokens.txt"` | ipinfo.io Token 文件名 |
 | `IP_CALIBRATION_CACHE_FILE` | `string` | `"ipinfo_cache.txt"` | 校准结果缓存文件名 |
@@ -427,7 +428,7 @@ python3 main.py
 | `BANDWIDTH_TIMEOUT` | `int` | `3` | 单个节点带宽测速超时（秒） |
 | `BANDWIDTH_RETRY_MAX` | `int` | `2` | 带宽测速整体重试轮数 |
 | `BANDWIDTH_RETRY_DELAY` | `int` | `3` | 带宽测速重试间隔（秒） |
-| `BANDWIDTH_URL_TEMPLATE` | `string` | `"https://speed.cloudflare.com/__down?bytes={bytes}"` | 测速 URL 模板 |
+| `BANDWIDTH_URL_TEMPLATE` | `string` | `"{scheme}://speed.cloudflare.com:{port}/__down?bytes={bytes}"` | 测速 URL 模板 |
 | `BANDWIDTH_PROCESS_BUFFER` | `int` | `2` | curl 进程额外缓冲时间（秒） |
 | `BANDWIDTH_CONNECT_TIMEOUT` | `int` | `3` | curl 测速连接超时（秒） |
 

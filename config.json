@@ -108,6 +108,9 @@
     "IP_CALIBRATION_ENABLED": false,
     "_comment_IP_CALIBRATION_ENABLED": "是否启用 IP 地区校准（true=启用，false=禁用）",
 
+    "TOKEN_FAILURE_THRESHOLD": 1,
+    "_comment_TOKEN_FAILURE_THRESHOLD": "Token连续失败多少次后跳过（达到该次数则切换下一个Token）",
+
     "IP_CALIBRATION_MIN_INTERVAL": 0.1,
     "_comment_IP_CALIBRATION_MIN_INTERVAL": "地区校准的最小请求间隔（秒）",
 
@@ -226,7 +229,7 @@
     "BANDWIDTH_RETRY_DELAY": 3,
     "_comment_BANDWIDTH_RETRY_DELAY": "带宽测速重试间隔（秒）",
 
-    "BANDWIDTH_URL_TEMPLATE": "https://speed.cloudflare.com/__down?bytes={bytes}",
+    "BANDWIDTH_URL_TEMPLATE": "{scheme}://speed.cloudflare.com:{port}/__down?bytes={bytes}",
     "_comment_BANDWIDTH_URL_TEMPLATE": "带宽测速 URL 模板，{bytes} 将被替换为实际字节数",
 
     "BANDWIDTH_PROCESS_BUFFER": 2,
