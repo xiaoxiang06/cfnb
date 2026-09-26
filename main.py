@@ -234,7 +234,7 @@ def load_config():
         "FETCH_TIMEOUT": 3,
         "FETCH_CONNECT_TIMEOUT": 3,
         "IP_CALIBRATION_ENABLED": False,
-        "TOKEN_FAILURE_THRESHOLD": 1,
+        "TOKEN_FAILURE_THRESHOLD": 3,
         "IP_CALIBRATION_MIN_INTERVAL": 0.1,
         "IP_CALIBRATION_TOKEN_FILE": "valid_tokens.txt",
         "IP_CALIBRATION_CACHE_FILE": "ipinfo_cache.txt",
@@ -432,6 +432,57 @@ if FORCE_DIRECT:
 
 socket.setdefaulttimeout(SOCKET_DEFAULT_TIMEOUT)
 
+# ==================== 单实例锁（文件锁，跨平台） ====================
+_LOCK_FILE_HANDLE = None
+_LOCK_FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".run.lock")
+
+def acquire_single_instance():
+    global _LOCK_FILE_HANDLE
+    f = None
+    try:
+        f = open(_LOCK_FILE_PATH, "a+")
+        f.seek(0)
+        if sys.platform == "win32":
+            import msvcrt
+            msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except (OSError, IOError):
+        if f is not None:
+            try:
+                f.close()
+            except Exception:
+                pass
+        return False
+    _LOCK_FILE_HANDLE = f
+    return True
+
+def release_single_instance():
+    global _LOCK_FILE_HANDLE
+    if _LOCK_FILE_HANDLE is None:
+        return
+    try:
+        if sys.platform == "win32":
+            import msvcrt
+            _LOCK_FILE_HANDLE.seek(0)
+            msvcrt.locking(_LOCK_FILE_HANDLE.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(_LOCK_FILE_HANDLE.fileno(), fcntl.LOCK_UN)
+    except Exception:
+        pass
+    try:
+        _LOCK_FILE_HANDLE.close()
+    except Exception:
+        pass
+    _LOCK_FILE_HANDLE = None
+    # 尝试删除锁文件，失败忽略（Windows 上可能被别的实例占用）
+    try:
+        os.remove(_LOCK_FILE_PATH)
+    except Exception:
+        pass
+
 # ====================================================
 
 def send_wxpusher_notification(content, summary):
@@ -530,6 +581,7 @@ def extract_country_code(label):
 
     tokens = re.split(r'[\s,;|/]+', label)
 
+    # 1. 检查两位/三位代码
     for token in tokens:
         token_cleaned = re.sub(r'^[\d\s\-_.|#]+', '', token.strip())
         m3 = re.match(r'^([A-Z]{3})(?![A-Za-z])', token_cleaned)
@@ -539,16 +591,16 @@ def extract_country_code(label):
         if m2 and m2.group(1) in CODE_SET:
             return m2.group(1)
 
+    # 2. 中文子串提取（改进）
     for token in tokens:
         token_cleaned = re.sub(r'^[\d\s\-_.|#]+', '', token)
-        token_no_emoji = re.sub(r'[\U0001F1E6-\U0001F1FF]', '', token_cleaned).strip()
-        cn_match = re.match(r'^([\u4e00-\u9fff（）()]+)\d*$', token_no_emoji)
-        if cn_match:
-            cn_name = cn_match.group(1).strip()
-            code = CN_TO_CODE.get(cn_name)
+        cn_matches = re.findall(r'[\u4e00-\u9fff（）()]+', token_cleaned)
+        for cn in cn_matches:
+            code = CN_TO_CODE.get(cn)
             if code:
                 return code
 
+    # 3. 国旗 emoji
     emoji_chars = [c for c in label if '\U0001F1E6' <= c <= '\U0001F1FF']
     if len(emoji_chars) >= 2 and len(emoji_chars) % 2 == 0:
         first = ord(emoji_chars[0]) - 0x1F1E6
@@ -707,16 +759,18 @@ def fetch_additional_source(url):
 class IpInfoAsync:
     def __init__(self, token_list, concurrency, min_interval, trust_env, failure_threshold):
         self.token_list = token_list
+        self.n_tokens = len(token_list)
         self.current_token_index = 0
         self.token_lock = asyncio.Lock()
         self.semaphore = asyncio.Semaphore(concurrency)
         self.min_interval = min_interval
-        self.last_request_time = 0
-        self.rate_lock = asyncio.Lock()
         self.session = None
         self.trust_env = trust_env
-        self.failure_threshold = failure_threshold
-        self.token_failures = [0] * len(token_list)
+        self.failure_threshold = max(2, failure_threshold)   # 强制 ≥2
+        self.token_failures = [0] * self.n_tokens
+        self.cooldown_until = [0.0] * self.n_tokens
+        self.last_request_time = [0.0] * self.n_tokens
+        self.rate_locks = [asyncio.Lock() for _ in range(self.n_tokens)]
 
     async def __aenter__(self):
         self.session = aiohttp.ClientSession(trust_env=self.trust_env)
@@ -726,65 +780,59 @@ class IpInfoAsync:
         if self.session:
             await self.session.close()
 
-    @property
-    def current_token(self):
-        if self.current_token_index < len(self.token_list):
-            return self.token_list[self.current_token_index]
-        return None
-
-    async def switch_token(self, silent=False):
+    async def _acquire_token(self):
+        """环形轮询：跳过已超阈值/冷却中的，全部不可用时选最不坏的"""
         async with self.token_lock:
-            if self.current_token_index + 1 < len(self.token_list):
-                self.current_token_index += 1
-                return True
-            else:
-                return False
-
-    async def _rate_limit(self):
-        async with self.rate_lock:
             now = asyncio.get_event_loop().time()
-            wait = self.last_request_time + self.min_interval - now
+            n = self.n_tokens
+            for _ in range(n):
+                self.current_token_index = (self.current_token_index + 1) % n
+                idx = self.current_token_index
+                if (self.token_failures[idx] < self.failure_threshold
+                        and self.cooldown_until[idx] <= now):
+                    return idx
+            # 全部不可用 → 选失败最少的硬上，不重置计数
+            idx = min(range(n), key=lambda i: self.token_failures[i])
+            self.current_token_index = idx
+            return idx
+
+    async def _rate_limit(self, idx):
+        async with self.rate_locks[idx]:
+            now = asyncio.get_event_loop().time()
+            wait = self.last_request_time[idx] + self.min_interval - now
             if wait > 0:
                 await asyncio.sleep(wait)
-            self.last_request_time = asyncio.get_event_loop().time()
+            self.last_request_time[idx] = asyncio.get_event_loop().time()
 
     async def get_ip_details(self, ip_address):
-        attempted = 0
-        max_attempts = len(self.token_list)
-        while attempted < max_attempts:
-            token = self.current_token
-            if token is None:
-                return None
-            idx = self.current_token_index
-            if self.token_failures[idx] >= self.failure_threshold:
-                if await self.switch_token():
-                    attempted += 1
-                    continue
-                else:
-                    return None
+        max_attempts = max(3, min(self.n_tokens, 10))
+        for _ in range(max_attempts):
+            idx = await self._acquire_token()
+            token = self.token_list[idx]
+            url = (f"https://ipinfo.io/{ip_address}/json?token={token}"
+                   if ip_address else
+                   f"https://ipinfo.io/json?token={token}")
 
-            url = f"https://ipinfo.io/{ip_address}/json?token={token}" if ip_address else f"https://ipinfo.io/json?token={token}"
-            await self._rate_limit()
+            await self._rate_limit(idx)
             async with self.semaphore:
                 try:
-                    async with self.session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                    async with self.session.get(
+                        url, timeout=aiohttp.ClientTimeout(total=5)
+                    ) as resp:
                         if resp.status == 429:
+                            # 限流：短冷却，不计 token 死亡
+                            self.cooldown_until[idx] = asyncio.get_event_loop().time() + 1.0
+                            continue
+                        if resp.status in (401, 403):
+                            # 真·token 失效
                             self.token_failures[idx] += 1
-                            if await self.switch_token():
-                                attempted += 1
-                                continue
-                            else:
-                                return None
+                            continue
                         resp.raise_for_status()
                         data = await resp.json()
                         self.token_failures[idx] = 0
                         country = data.get("country", "Unknown")
                         if country == "Unknown":
-                            if await self.switch_token():
-                                attempted += 1
-                                continue
-                            else:
-                                return None
+                            continue
                         return {
                             "CountryCode": country,
                             "Region": data.get("region", "Unknown"),
@@ -793,12 +841,9 @@ class IpInfoAsync:
                             "ISP": data.get("org", "").split(" ", 1)[-1] if " " in data.get("org", "") else data.get("org", "Unknown"),
                         }
                 except (asyncio.TimeoutError, aiohttp.ClientError):
-                    self.token_failures[idx] += 1
-                    if await self.switch_token():
-                        attempted += 1
-                        continue
-                    else:
-                        return None
+                    # 网络抖动：短冷却，不计 token 死亡
+                    self.cooldown_until[idx] = asyncio.get_event_loop().time() + 0.3
+                    continue
         return None
 
 def load_tokens(filepath):
@@ -852,22 +897,30 @@ def sort_cache_file(cache_file):
 
 async def validate_tokens(token_list, concurrency, min_interval, trust_env):
     valid = []
-    async with IpInfoAsync(token_list, concurrency, min_interval, trust_env, TOKEN_FAILURE_THRESHOLD) as handler:
-        tasks = [asyncio.ensure_future(handler.get_ip_details("")) for _ in token_list]
+    sem = asyncio.Semaphore(concurrency)
+    async with aiohttp.ClientSession(trust_env=trust_env) as session:
+        async def check(token):
+            url = f"https://ipinfo.io/json?token={token}"
+            try:
+                async with sem:
+                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                        if resp.status != 200:
+                            return token, False
+                        data = await resp.json()
+                        return token, bool(data.get("country"))
+            except Exception:
+                return token, False
+
+        tasks = [asyncio.ensure_future(check(t)) for t in token_list]
         total = len(tasks)
         completed = 0
         for coro in asyncio.as_completed(tasks):
-            await coro
+            token, ok = await coro
+            if ok:
+                valid.append(token)
             completed += 1
             print(f"\rToken 校验进度：{completed}/{total}", end="", flush=True)
         print()
-        for i, task in enumerate(tasks):
-            try:
-                res = task.result()
-                if res and res.get("CountryCode") != "Unknown":
-                    valid.append(token_list[i])
-            except:
-                pass
     return valid
 
 async def query_new_ips(new_ips, token_list, concurrency, min_interval, trust_env,
@@ -935,6 +988,14 @@ def calibrate_regions(nodes, token_file, cache_file):
         print("IP 地区校准已禁用，跳过。")
         return
 
+    # ★ 先应用缓存
+    cache = load_ipinfo_cache(cache_file)
+    for i, node in enumerate(nodes):
+        ipport = node.split('#')[0]
+        tag = cache.get(ipport)
+        if tag:
+            nodes[i] = f"{ipport}#{tag.split()[0]}"
+
     token_list = load_tokens(token_file)
     if not token_list:
         print("valid_tokens.txt 为空，IP 地区校准跳过。")
@@ -955,7 +1016,6 @@ def calibrate_regions(nodes, token_file, cache_file):
         ipport = node.split('#')[0]
         ipport_set.add(ipport)
 
-    cache = load_ipinfo_cache(cache_file)
     cached_ipports = set(cache.keys())
     new_ipports = ipport_set - cached_ipports
 
@@ -996,7 +1056,7 @@ def calibrate_regions(nodes, token_file, cache_file):
 # =========================== 核心测试、筛选、测速及更新函数 ===========================
 
 def test_tcp_latency(ip, port, timeout=TIMEOUT, probes=TCP_PROBES):
-    min_latency = float("inf")
+    max_latency = 0.0
     success = 0
     for _ in range(probes):
         try:
@@ -1005,12 +1065,14 @@ def test_tcp_latency(ip, port, timeout=TIMEOUT, probes=TCP_PROBES):
                 sock.settimeout(timeout)
                 sock.connect((ip, int(port)))
             latency = time.time() - start
-            if latency < min_latency:
-                min_latency = latency
+            if latency > max_latency:
+                max_latency = latency
             success += 1
         except Exception:
             continue
-    return min_latency, success
+    if success == 0:
+        return float("inf"), 0
+    return max_latency, success
 
 def test_node(node_str):
     m = NODE_PATTERN.match(node_str)
@@ -1099,9 +1161,13 @@ def check_http_server(node_str, timeout, max_retries, retry_delay, method, conne
     if len(latencies) < test_rounds:
         return (node_str, False, "not_enough_samples", 0.0, 0.0)
 
-    avg_lat = sum(latencies) / len(latencies)
-    variance = sum((l - avg_lat) ** 2 for l in latencies) / len(latencies)
+    # 用平均值算抖动（真实波动）
+    mean_lat = sum(latencies) / len(latencies)
+    variance = sum((l - mean_lat) ** 2 for l in latencies) / len(latencies)
     jitter = variance ** 0.5
+
+    # 返回给外层的延迟用最大值（最差一次）
+    avg_lat = max(latencies)
     return (node_str, True, "cloudflare", avg_lat, jitter)
 
 def availability_filter_candidates(candidates):
@@ -1267,11 +1333,9 @@ def measure_bandwidth_curl(node_str):
                 size_bytes = float(parts[0])
                 if size_bytes < expected_size:
                     return (node_str, 0)
-                time_starttransfer = float(parts[1])
                 time_total = float(parts[2])
-                transfer_time = time_total - time_starttransfer
-                if transfer_time > 0:
-                    speed_mbps = (size_bytes * 8) / (transfer_time * 1000 * 1000)
+                if time_total > 0:
+                    speed_mbps = (size_bytes * 8) / (time_total * 1000 * 1000)
                     return (node_str, speed_mbps)
     except Exception:
         pass
@@ -1886,6 +1950,13 @@ def main():
 
 if __name__ == "__main__":
     import atexit
+
+    # ---- 单实例检查：已有实例在跑就直接退出 ----
+    if not acquire_single_instance():
+        print("检测到本程序已在运行，本次启动自动退出。")
+        sys.exit(0)
+    atexit.register(release_single_instance)
+    # -------------------------------------------
 
     enable_log = ENABLE_LOGGING
     log_filename = LOG_FILE

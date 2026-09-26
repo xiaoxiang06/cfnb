@@ -108,7 +108,7 @@
     "IP_CALIBRATION_ENABLED": false,
     "_comment_IP_CALIBRATION_ENABLED": "是否启用 IP 地区校准（true=启用，false=禁用）",
 
-    "TOKEN_FAILURE_THRESHOLD": 1,
+    "TOKEN_FAILURE_THRESHOLD": 3,
     "_comment_TOKEN_FAILURE_THRESHOLD": "Token连续失败多少次后跳过（达到该次数则切换下一个Token）",
 
     "IP_CALIBRATION_MIN_INTERVAL": 0.1,

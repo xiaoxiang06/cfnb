@@ -376,7 +376,7 @@ python3 main.py
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
 | `IP_CALIBRATION_ENABLED` | `boolean` | `false` | 是否启用 IP 地区校准（基于 ipinfo.io） |
-| `TOKEN_FAILURE_THRESHOLD` | `float` | `1` | Token连续失败多少次后跳过（达到该次数则切换下一个Token） |
+| `TOKEN_FAILURE_THRESHOLD` | `float` | `3` | Token连续失败多少次后跳过（达到该次数则切换下一个Token） |
 | `IP_CALIBRATION_MIN_INTERVAL` | `float` | `0.1` | 请求最小间隔（秒） |
 | `IP_CALIBRATION_TOKEN_FILE` | `string` | `"valid_tokens.txt"` | ipinfo.io Token 文件名 |
 | `IP_CALIBRATION_CACHE_FILE` | `string` | `"ipinfo_cache.txt"` | 校准结果缓存文件名 |
