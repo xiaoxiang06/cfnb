@@ -10,7 +10,7 @@
     "PER_COUNTRY_TOP_N": 10,
     "_comment_PER_COUNTRY_TOP_N": "分国家模式下每个国家保留的节点数量",
 
-    "BANDWIDTH_CANDIDATES": 150,
+    "BANDWIDTH_CANDIDATES": 50,
     "_comment_BANDWIDTH_CANDIDATES": "进入带宽测速的候选节点数（从TCP通过者中选取前N个）",
 
     "TCP_PROBES": 1,
@@ -34,7 +34,7 @@
     "FILTER_COUNTRIES_ENABLED": true,
     "_comment_FILTER_COUNTRIES_ENABLED": "前置白名单开关（true=仅保留下方 ALLOWED_COUNTRIES 中的国家，其余在 TCP 测试前剔除）",
 
-    "ALLOWED_COUNTRIES": ["HK"],
+    "ALLOWED_COUNTRIES": ["US"],
     "_comment_ALLOWED_COUNTRIES": "前置白名单列表（仅在 FILTER_COUNTRIES_ENABLED=true 时生效）",
 
     "PRE_FILTER_BLOCKED_ENABLED": true,
